@@ -21,7 +21,7 @@ jobs:
           url: https://sda.preview.cb-demos.io/westest/
           username: ${{ secrets.WES_JENKINS_USERNAME }}
           token: ${{ secrets.WES_JENKINS_TOKEN }}
-          job-name: WesTestJob2
+          job-name: WesTestJob
       - name: Run GHA Workflow
         kind: test
         uses: cloudbees-io/ghactions-run-workflow@v2
@@ -29,7 +29,7 @@ jobs:
         with:
           token: ${{ secrets.WES_GH_TOKEN }}
           org-name: cloudbees-days
-          repo-name: hackers-WesTest4Avan
+          repo-name: hackers-WesTest18
           branch-name: main
           workflow-name: test-and-build-image
           test-type: JUnit
@@ -82,12 +82,18 @@ jobs:
           build-args: BUILDKIT_CONTEXT_KEEP_GIT_DIR=1,BUILDKIT_INLINE_CACHE=1
       - uses: cloudbees-io/asset-chain-utils-preprod/upload-binary@v1
         name: Upload binary from container build
-        continue-on-error: true
         id: upload-binary
         with:
           file-path: container-image.tar
           file-type: BINARY_CONTAINER
           debug: "true"
+      - name: Register build artifact
+        id: register-artifact
+        uses: cloudbees-io/register-build-artifact@v2
+        with:
+          name: "ldonleycb/hackers-organized"
+          version: "${{ cloudbees.scm.sha }}"
+          url: "${{ secrets.DOCKERHUB_USER }}/hackers-organized:${{ cloudbees.scm.sha }}"
       - name: Publish evidence
         uses: cloudbees-io/publish-evidence-item@v1
         with:
@@ -96,8 +102,11 @@ jobs:
 
             [Docker Hub](https://hub.docker.com/repository/docker/ldonleycb/hackers-organized/tags)
 
-            Deployed hackers-organized:${{ cloudbees.scm.sha }}
+            **Artifact ID:** ${{ steps.register-artifact.outputs.artifact-id }}
+            **Image:** hackers-organized:${{ cloudbees.scm.sha }}
           format: MARKDOWN
+    outputs:
+      ARTIFACT_ID: ${{ steps.register-artifact.outputs.artifact-id }}
     needs: test
   scan:
     outputs:
@@ -176,8 +185,8 @@ jobs:
         name: Set kubeconfig
         with:
           secname: ${{ secrets.kubeconfig }}
-      - uses: cloudbees-io/kustomize-deploy@v1
-        name: Deploy to cluster
+      - name: Deploy to cluster
+        uses: cloudbees-io/kustomize-deploy@v1
         kind: deploy
         with:
           kustomization-base-dir: ${{ cloudbees.workspace }}/k8s/base
@@ -191,14 +200,12 @@ jobs:
             [Production frontend](https://hackers-organized-prod.preview.cb-demos.io/)
 
             Running hackers-organized:${{ cloudbees.scm.sha }}
+            **Artifact ID:** ${{ needs.build-container-image.outputs.ARTIFACT_ID }}
           format: MARKDOWN
-      - name: Register_deployed_artifact
-        uses: https://github.com/cloudbees-io/register-deployed-artifact@v1
+      - name: Register deployed artifact
+        uses: cloudbees-io/register-deployed-artifact@v2
         with:
-          name: "ldonleycb/hackers-organized"
-          version: "${{ cloudbees.scm.sha }}"
-          url: "${{ secrets.DOCKERHUB_USER }}/hackers-organized:${{ cloudbees.scm.sha }}"
-          digest: ""
+          artifact-id: ${{ needs.build-container-image.outputs.ARTIFACT_ID }}
           target-environment: "DOW Production"
     needs:
       - build-container-image
