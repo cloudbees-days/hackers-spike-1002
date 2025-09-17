@@ -181,10 +181,10 @@ jobs:
     steps:
       - name: Checkout
         uses: cloudbees-io/checkout@v1
-      - uses: cashokannamalai/kubeconfig@v1
+      - uses: cloudbees-days/setup-kubeconfig
         name: Set kubeconfig
         with:
-          secname: ${{ secrets.kubeconfig }}
+          kubeconfig: ${{ secrets.kubeconfig }}
       - name: Deploy to cluster
         uses: cloudbees-io/kustomize-deploy@v1
         kind: deploy
