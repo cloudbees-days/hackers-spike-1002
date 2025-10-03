@@ -184,7 +184,7 @@ jobs:
       - uses: cloudbees-days/setup-kubeconfig
         name: Set kubeconfig
         with:
-          kubeconfig: ${{ secrets.kubeconfig }}
+          kubeconfig: ${{ secrets.KUBECONFIG }}
       - name: Deploy to cluster
         uses: cloudbees-io/kustomize-deploy@v1
         kind: deploy
